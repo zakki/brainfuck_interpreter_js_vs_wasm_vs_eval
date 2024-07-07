@@ -86,6 +86,10 @@ function compile(code) {
         return n;
     }
 
+    let loopId = 0;
+    let elements = [];
+    let loopStack = [];
+
     for (let i = 0; i < code.length; i++) {
         switch (code[i]) {
             case '>':
@@ -132,27 +136,45 @@ function compile(code) {
             case '[':
                 if (code.substring(i, i+3) == "[-]") {
                     result +=
-                `                memory[pointer] = 0;
+`                memory[pointer] = 0;
 `;
                     i += 2;
                     break;
                 }
+
                 result +=
 `            // [ label ${i}  ${jumpTable[i]};
-                while (memory[pointer] !== 0) {
+            // while (memory[pointer] !== 0)
+                pointer = loop${loopId}(pointer);
 `;
+                loopStack.push(result);
+                result = `
+function loop${loopId}(pointer) {
+    while (memory[pointer] !== 0) {
+`;
+                loopId++;
                 break;
             case ']':
                 result +=
 `            // ] label ${i}  ${jumpTable[i]};
-                }
+    }
+    return pointer;
+}
 `;
+                elements.push(result);
+                result = loopStack.pop();
                 break;
         }
     }
     result +=
 `            return output;
     `;
+
+    for (const fun of elements) {
+        result += fun;
+    }
+
+    console.log(result);
 
     return new Function(result);
 }
