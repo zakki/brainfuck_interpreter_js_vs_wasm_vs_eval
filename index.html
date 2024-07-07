@@ -13,6 +13,7 @@
         <div class="mb-3">
             <button onclick="executeBF()" class="btn btn-lg btn-primary mr-2">Execute JavaScript</button>
             <button onclick="executeWasmBF()" class="btn btn-lg btn-info">Execute WebAssembly</button>
+            <button onclick="executeOptBF()" class="btn btn-lg btn-primary mr-2">Execute JavaScript Opt</button>
         </div>
         <div>
             <h4>Execution Time: <span id="time" class="text-primary">0s 0ms</span></h4>
@@ -61,6 +62,40 @@
             clearInterval(intervalId);
             outputElement.textContent = output;
            
+            const now = Date.now();
+            const elapsed = now - startTime;
+            const seconds = Math.floor(elapsed / 1000);
+            const milliseconds = elapsed % 1000;
+            clearInterval(intervalId);
+            timeElement.textContent = `${seconds}s ${milliseconds}ms`;
+        };
+
+        worker.postMessage(code);
+    }
+
+    function executeOptBF() {
+        if(worker) worker.terminate();
+        worker = new Worker('./js/bf-js-opt-worker.js');
+
+        const code = document.getElementById('bfCode').value;
+        const outputElement = document.getElementById('output');
+        const timeElement = document.getElementById('time');
+        outputElement.textContent = "";
+
+        startTime = Date.now();
+        intervalId = setInterval(() => {
+            const now = Date.now();
+            const elapsed = now - startTime;
+            const seconds = Math.floor(elapsed / 1000);
+            const milliseconds = elapsed % 1000;
+            timeElement.textContent = `${seconds}s ${milliseconds}ms`;
+        }, 1);
+
+        worker.onmessage = function(e) {
+            const output = e.data;
+            clearInterval(intervalId);
+            outputElement.textContent = output;
+        
             const now = Date.now();
             const elapsed = now - startTime;
             const seconds = Math.floor(elapsed / 1000);
