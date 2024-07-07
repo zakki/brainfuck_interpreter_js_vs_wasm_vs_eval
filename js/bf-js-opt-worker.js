@@ -130,6 +130,13 @@ function compile(code) {
 `;
                 break;
             case '[':
+                if (code.substring(i, i+3) == "[-]") {
+                    result +=
+                `                memory[pointer] = 0;
+`;
+                    i += 2;
+                    break;
+                }
                 result +=
 `            // [ label ${i}  ${jumpTable[i]};
                 while (memory[pointer] !== 0) {
