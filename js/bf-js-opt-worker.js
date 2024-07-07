@@ -48,10 +48,9 @@ function runBrainfuck(code) {
 }
 
 function compile(code) {
-    let result = "";
     const jumpTable = optimizeBrainfuck(code);
+    let result = "";
     result += `
-() => {
     const memory = new Uint8Array(30000);
     let pointer = 0;
     let output = '';
@@ -64,59 +63,83 @@ function compile(code) {
         case -1:
     `;
 
+    function count(i, c) {
+        let n = 0;
+        for (let j = i; j < code.length && code[j] == c; j++) {
+            n++;
+        }
+        return n;
+    }
+
     for (let i = 0; i < code.length; i++) {
         switch (code[i]) {
             case '>':
-                result += `
-                pointer++;
-                `;
+                {
+                    let n = count(i, '>');
+                    i += n - 1;
+                    result +=
+`                pointer += ${n};
+`;
+                }
                 break;
             case '<':
-                result += `
-                pointer--;
-                `;
+                {
+                    let n = count(i, '<');
+                    i += n - 1;
+                    result +=
+`                pointer -= ${n};
+`;
+                }
                 break;
             case '+':
-                result += `
-                memory[pointer]++;
-                `;
+                {
+                    let n = count(i, '+');
+                    i += n - 1;
+                result +=
+`                memory[pointer] += ${n};
+`;
+                }
                 break;
             case '-':
-                result += `
-                memory[pointer]--;
-                `;
+                {
+                    let n = count(i, '-');
+                    i += n - 1;
+                result +=
+`                memory[pointer] -= ${n};
+`;
+                }
                 break;
             case '.':
-                result += `
-                output += String.fromCharCode(memory[pointer]);
-                `;
+                result +=
+`                output += String.fromCharCode(memory[pointer]);
+`;
                 break;
             case '[':
-                result += `
-            // label ${i}
+                result +=
+`            // label ${i}
             case  ${i}:
                 if (memory[pointer] === 0) {
                     // goto i;
                     pc = ${jumpTable[i]};
                     break;
                 }
-                `;
+`;
                 break;
             case ']':
-                result += `
-            // label ${i}
+                result +=
+`            // label ${i}
             case ${i}:
                 if (memory[pointer] !== 0) {
                     // goto i;
                     pc = ${jumpTable[i]};
                     break;
                 }
-                `;
+`;
                 break;
         }
     }
-    result += `
-            // running = false;
+    result +=
+`            // running = false;
             return output;
     `;
 
@@ -124,18 +147,19 @@ function compile(code) {
         }
     }
     return output;
-}
     `;
   
-    return result;
+    return new Function(result);
 }
 
 self.addEventListener('message', function(e) {
     const code = e.data;
     // const output = runBrainfuck(code);
-    const opt = compile(code);
-    console.log(opt);
-    const fun = eval(opt);
+    // const opt = compile(code);
+    // console.log(opt);
+    // const fun = eval(opt);
+    const fun = compile(code);
+    console.log(fun);
     const output = fun();
     self.postMessage(output); 
 });
