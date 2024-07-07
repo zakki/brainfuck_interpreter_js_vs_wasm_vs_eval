@@ -47,20 +47,35 @@ function runBrainfuck(code) {
     return output;
 }
 
+function preprocess(code) {
+    let result = "";
+
+    for (let i = 0; i < code.length; i++) {
+        switch (code[i]) {
+            case '>':
+            case '<':
+            case '+':
+            case '-':
+            case '.':
+            case '[':
+            case ']':
+                result += code[i];
+                break;
+        }
+    }
+
+    return result;
+}
+
 function compile(code) {
+    code = preprocess(code);
     const jumpTable = optimizeBrainfuck(code);
     let result = "";
     result += `
     const memory = new Uint8Array(30000);
     let pointer = 0;
     let output = '';
-    let pc = -1;
-    //let running = true;
 
-    //while (running) {
-    while (true) {
-        switch(pc) {
-        case -1:
     `;
 
     function count(i, c) {
@@ -116,39 +131,22 @@ function compile(code) {
                 break;
             case '[':
                 result +=
-`            // label ${i}
-            case  ${i}:
-                if (memory[pointer] === 0) {
-                    // goto i;
-                    pc = ${jumpTable[i]};
-                    break;
-                }
+`            // [ label ${i}  ${jumpTable[i]};
+                while (memory[pointer] !== 0) {
 `;
                 break;
             case ']':
                 result +=
-`            // label ${i}
-            case ${i}:
-                if (memory[pointer] !== 0) {
-                    // goto i;
-                    pc = ${jumpTable[i]};
-                    break;
+`            // ] label ${i}  ${jumpTable[i]};
                 }
 `;
                 break;
         }
     }
     result +=
-`            // running = false;
-            return output;
+`            return output;
     `;
 
-    result += `
-        }
-    }
-    return output;
-    `;
-  
     return new Function(result);
 }
 
